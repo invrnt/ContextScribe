@@ -191,4 +191,4 @@ ContextScribe is an early-stage project. Interfaces, defaults, and output conven
 
 ## License
 
-A license has not been selected yet. Add an OSI-approved license before distributing the project as open source; MIT or Apache-2.0 are good defaults depending on the desired patent terms.
+This project is licensed under the MIT License. See `/home/runner/work/ContextScribe/ContextScribe/LICENSE` for details.
