@@ -1,0 +1,11 @@
+[project]
+name = "contextscribe"
+version = "0.1.0"
+description = "Turn visual PDFs into faithful, LLM-ready Markdown with Gemini"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "google-genai>=2.12.0",
+    "pypdf>=6.0.0",
+    "python-dotenv>=1.0.0",
+]
