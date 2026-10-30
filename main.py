@@ -16,6 +16,8 @@ Variables opcionales:
     GEMINI_MAX_WORKERS=15
     GEMINI_MAX_RETRIES=4
     GEMINI_MAX_PAGES_PER_CHUNK=30
+    GEMINI_THINKING_LEVEL=MINIMAL
+    GEMINI_PROMPT_FILE=/ruta/a/prompt.md
 """
 
 from __future__ import annotations
@@ -57,35 +59,42 @@ FILE_PROCESSING_TIMEOUT_SECONDS = 10 * 60
 
 PROMPT = """
 Actúa exclusivamente como un transcriptor jurídico documental de máxima
-precisión.
+precisión. NO eres un resumidor ni un descriptor de imágenes.
 
 Tu tarea es transcribir ÍNTEGRAMENTE el documento PDF adjunto a Markdown,
-desde la primera hasta la última página.
+desde la primera hasta la última página, carácter por carácter.
+
+PROHIBICIÓN ABSOLUTA DE RESUMIR:
+
+- Está prohibido resumir, parafrasear, describir o sintetizar cualquier texto
+  legible. Si un texto se puede leer, se transcribe literalmente.
+- Una página escaneada, fotografiada o en forma de imagen NO es una "imagen"
+  para efectos de estas reglas: es un documento y debe transcribirse
+  completo, igual que si tuviera texto digital.
+- Esto incluye, sin excepción: escrituras públicas, certificados (de
+  tradición, catastrales, de existencia, etc.), facturas, recibos, boletas
+  de registro, pólizas, guías y comprobantes de envío, cédulas de
+  ciudadanía (anverso y reverso), tarjetas profesionales, capturas de
+  pantalla, correos electrónicos, formularios, oficios, constancias, sellos
+  y notas manuscritas.
+- Una respuesta del tipo "[Descripción de imagen: Factura de venta No. X
+  por valor de Y]" en lugar de la transcripción de esa factura es un ERROR
+  GRAVE. Debes transcribir cada campo, número, fecha, nombre, valor, tabla y
+  leyenda visibles.
 
 REGLAS OBLIGATORIAS:
 
 1. Transcribe absolutamente todo el contenido visible del documento, sin
    resumir, interpretar, corregir, modernizar, completar ni omitir nada.
+   Incluye encabezados, membretes, pies de página, numeración, textos de
+   firma digital, códigos de verificación y URLs.
 
-2. Conserva exactamente:
-   - palabras;
-   - ortografía original;
-   - errores tipográficos;
-   - mayúsculas y minúsculas;
-   - números;
-   - fechas;
-   - cantidades;
-   - monedas;
-   - nombres propios;
-   - referencias;
-   - numeración de cláusulas;
-   - notas al pie;
-   - encabezados;
-   - pies de página;
-   - sellos;
-   - firmas legibles;
-   - anotaciones manuscritas legibles;
-   - marcas, códigos y números de radicación.
+2. Conserva exactamente: palabras; ortografía original; errores
+   tipográficos; mayúsculas y minúsculas; números; fechas; horas;
+   cantidades; monedas; nombres propios; números de identificación;
+   referencias; numeración de cláusulas y anotaciones; notas al pie;
+   encabezados; pies de página; sellos; firmas legibles; anotaciones
+   manuscritas legibles; marcas, códigos, PIN y números de radicación.
 
 3. No corrijas errores del documento. No inventes texto ilegible. Cuando un
    fragmento realmente no pueda leerse, escribe exactamente:
@@ -93,17 +102,11 @@ REGLAS OBLIGATORIAS:
    [ILEGIBLE]
 
    Cuando solo una parte sea ilegible, conserva el texto legible e inserta
-   [ILEGIBLE] únicamente en la posición correspondiente.
+   [ILEGIBLE] únicamente en la posición correspondiente. [ILEGIBLE] es solo
+   para texto que de verdad no se puede leer, nunca para abreviar.
 
 4. Mantén el orden de lectura y la estructura lógica del original. Usa
-   Markdown para representar:
-   - títulos y subtítulos;
-   - párrafos;
-   - listas;
-   - tablas;
-   - citas;
-   - secciones;
-   - saltos de página.
+   Markdown para títulos, párrafos, listas, tablas, citas y secciones.
 
 5. Representa cada cambio de página mediante una línea independiente con este
    formato:
@@ -113,47 +116,49 @@ REGLAS OBLIGATORIAS:
    donde N es el número físico dentro del documento original, según el
    intervalo de páginas indicado al final de estas instrucciones.
 
-6. Para las tablas:
-   - transcribe todas las celdas;
+6. Para las tablas y formularios:
+   - transcribe todas las celdas y todos los pares campo/valor;
    - conserva filas y columnas;
    - usa tablas Markdown cuando sea posible;
    - si una tabla es demasiado compleja, represéntala con HTML válido dentro
      del Markdown;
    - no conviertas una tabla en un resumen narrativo.
 
-7. Examina también las imágenes, páginas escaneadas, fotografías, sellos,
-   membretes, diagramas, capturas y elementos gráficos. Transcribe todo texto
-   relevante que aparezca dentro de ellos.
+7. Marcas de agua o textos de fondo repetidos idénticos en toda la página
+   pueden transcribirse una sola vez por página, indicando
+   [Marca de agua: ...].
 
-8. Cuando una imagen aporte información jurídica o documental relevante que
-   no pueda representarse solo mediante texto, añade una descripción objetiva
-   y estrictamente factual con este formato:
+8. Elementos puramente gráficos (fotografía de una persona, huella
+   dactilar, escudo, logotipo, código de barras o QR, garabato de firma) se
+   indican con una etiqueta breve entre corchetes, por ejemplo
+   [Fotografía], [Huella dactilar], [Código de barras], [Logotipo: texto
+   visible], [Firma ilegible], [Sello: texto legible del sello]. Estas
+   etiquetas COMPLEMENTAN la transcripción; nunca la reemplazan. Todo texto
+   que aparezca junto a esos elementos o dentro de ellos se transcribe.
 
-   [Descripción de imagen: ...]
-
-   No especules sobre información que no sea visible.
-
-9. En firmas y sellos:
-   - transcribe cualquier texto legible;
-   - no identifiques personas por inferencia;
-   - usa [Firma ilegible] cuando corresponda;
-   - usa [Sello ilegible] cuando corresponda.
+9. En firmas y sellos: transcribe cualquier texto legible; no identifiques
+   personas por inferencia; usa [Firma ilegible] o [Sello ilegible] cuando
+   corresponda.
 
 10. No agregues introducciones, explicaciones, conclusiones, advertencias,
-    comentarios editoriales ni bloques de código.
+    comentarios editoriales ni bloques de código. No encierres la respuesta
+    entre ```markdown ni entre otras cercas de código.
 
-11. No encierres la respuesta entre ```markdown ni entre otras cercas de
-    código.
-
-12. La respuesta debe contener exclusivamente la transcripción completa en
+11. La respuesta debe contener exclusivamente la transcripción completa en
     Markdown.
 
-13. Antes de finalizar, verifica internamente que procesaste todas las páginas
-    y que no omitiste anexos, tablas, notas marginales, reversos, páginas en
-    blanco identificables ni texto contenido en imágenes.
+12. Antes de finalizar, verifica internamente, página por página, que:
+    - procesaste todas las páginas;
+    - ninguna página con texto legible quedó reducida a una descripción;
+    - no omitiste anexos, tablas, notas marginales, reversos, pies de
+      página ni texto contenido en escaneos o capturas.
 
 Comienza directamente con la transcripción del documento.
 """.strip()
+
+# Permite sustituir el prompt por el contenido de un archivo externo.
+if os.getenv("GEMINI_PROMPT_FILE"):
+    PROMPT = Path(os.environ["GEMINI_PROMPT_FILE"]).read_text(encoding="utf-8").strip()
 
 
 class ResponseTruncatedError(RuntimeError):
@@ -545,7 +550,7 @@ def transcribe_chunk_once(
                 temperature=0,
                 max_output_tokens=65_536,
                 thinking_config=types.ThinkingConfig(
-                    thinking_level="MINIMAL",
+                    thinking_level=os.getenv("GEMINI_THINKING_LEVEL", "MINIMAL"),
                 ),
             ),
         )

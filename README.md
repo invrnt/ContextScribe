@@ -136,6 +136,8 @@ ContextScribe reads `.env` from the directory containing `main.py`.
 | `GEMINI_MAX_WORKERS` | `15` | Concurrent PDF workers. Capped at 15. |
 | `GEMINI_MAX_RETRIES` | `4` | Attempts for errors classified as transient. |
 | `GEMINI_MAX_PAGES_PER_CHUNK` | `30` | Maximum size of each initial page range. |
+| `GEMINI_THINKING_LEVEL` | `MINIMAL` | Gemini thinking level (`MINIMAL`, `LOW`, `MEDIUM`, `HIGH`). Pro models do not accept `MINIMAL`. |
+| `GEMINI_PROMPT_FILE` | — | Path to a UTF-8 file whose content replaces the built-in transcription prompt. |
 
 Example:
 
@@ -145,9 +147,26 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 GEMINI_MAX_WORKERS=5
 GEMINI_MAX_RETRIES=4
 GEMINI_MAX_PAGES_PER_CHUNK=30
+GEMINI_THINKING_LEVEL=MINIMAL
 ```
 
 Lower `GEMINI_MAX_WORKERS` if you encounter API rate limits. Lower `GEMINI_MAX_PAGES_PER_CHUNK` for unusually dense documents or when smaller requests are preferable.
+
+### Scanned documents
+
+Lite models tend to replace whole scanned pages (deeds, invoices, receipts,
+ID cards, e-mail screenshots) with a one-line image description instead of
+transcribing them. The built-in prompt forbids this explicitly, but for
+image-heavy PDFs the most reliable settings are one page per request and a
+higher thinking level:
+
+```dotenv
+GEMINI_MAX_PAGES_PER_CHUNK=1
+GEMINI_THINKING_LEVEL=MEDIUM
+```
+
+After a run, check the output for any remaining `[Descripción de imagen: ...]`
+blocks that stand in for legible text.
 
 ## Long and incomplete documents
 
